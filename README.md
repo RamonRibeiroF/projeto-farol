@@ -152,6 +152,6 @@ vírgula decimal, estornos, pessoa duplicada, status vazio) e é tratada na cama
 - Sempre `--profile` nos comandos do Databricks.
 - A bronze guarda o dado **como veio**. Limpeza e integração acontecem na silver.
 
-## Créditos
+---
 
-Projeto adaptado do material da Jornada de Dados. Detalhes em [NOTICE.md](NOTICE.md). Dados e empresas fictícios.
+Dados e empresas fictícios.
