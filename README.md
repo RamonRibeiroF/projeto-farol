@@ -60,6 +60,7 @@ Os KPIs são definidos **uma vez** (Metric Views no Unity Catalog) e reusados no
 | Dashboard e Genie definidos como código (JSON) | versionados no Git, sem divergência entre o workspace e o repositório |
 | Verificação com valores esperados (`verificacao-bronze.sql`) | a carga é testada: cada contagem e total de referência retorna `ok` ou `CONFIRA` |
 | KPIs definidos uma vez, em Metric Views (próximas etapas) | uma fonte da verdade para dashboard, Genie e app |
+| API externa bloqueada no Free Edition: espelho do JSON no GitHub, com o código original documentado | o exercício segue sendo uma chamada HTTP de verdade; ver [decisão 001](docs/decisoes/001-apis-externas-no-free-edition.md) |
 
 ## 🗺️ Estado do projeto
 

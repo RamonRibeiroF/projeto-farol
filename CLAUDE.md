@@ -39,4 +39,5 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 - SQL legível, não esperto. Tabelas e colunas em snake_case e português.
 - Referência completa `lakehouse_vertice.<schema>.<tabela>` nos `.sql`; no JSON do dashboard, nome sem catálogo.
 - Nada de `mode: development` no bundle (prefixa os schemas).
+- API externa no Free Edition (serverless só resolve domínios liberados): se a chamada original falhar com `NameResolutionError`, publique o JSON em `data/`, aponte para `raw.githubusercontent.com` e registre o código original em `docs/decisoes/001-apis-externas-no-free-edition.md`.
 - Responda em português, curto e direto.
