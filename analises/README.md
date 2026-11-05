@@ -10,6 +10,8 @@ também como mapa da sujeira do dado, que a silver vai corrigir.
 | `02-custo-do-atraso.sql` | quanto o atraso vai custar? | EV, CPI, EAC e estouro previsto por projeto, ao lado do farol do gerente |
 | `03-leitura-de-contratos-pdf.sql` | o que o contrato diz sobre multa por atraso? | `read_files` com `binaryFile` e `ai_parse_document` |
 
-Execute na ordem, um bloco por vez no SQL Editor. O `02` usa a view criada na parte 5 do `01`.
+Os arquivos são notebooks SQL do Databricks: cada comando é uma célula. Execute na ordem, uma célula por vez
+(**Shift + Enter**), em vez de *Run all*: na parte 4 do `01` a primeira célula dá erro de propósito e interromperia a
+execução em lote. O `02` usa a view criada na parte 5 do `01`.
 
 O "hoje" do dataset é `DATE'2026-10-16'`: não use `current_date()`.

@@ -1,3 +1,5 @@
+-- Databricks notebook source
+
 -- ============================================
 -- LEITURA DE CONTRATOS EM PDF com SQL
 -- ============================================

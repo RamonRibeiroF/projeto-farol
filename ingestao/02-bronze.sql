@@ -1,3 +1,5 @@
+-- Databricks notebook source
+
 -- Ingestão bronze
 --
 -- A bronze preserva o dado como veio. Nada de limpeza aqui: se der problema
@@ -41,11 +43,16 @@ CREATE OR REPLACE TABLE lakehouse_vertice.bronze.projetos AS
 SELECT * EXCEPT (_rescued_data)
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/pmo/projetos.csv',
                 format => 'csv', header => true, inferColumnTypes => false);
+
+-- COMMAND ----------
+
 -- status_semanal: toda sexta o gerente publica avanço, farol e bloqueios (texto livre)
 CREATE OR REPLACE TABLE lakehouse_vertice.bronze.status_semanal AS
 SELECT * EXCEPT (_rescued_data)
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/pmo/status_semanal.csv',
                 format => 'csv', header => true, inferColumnTypes => false);
+
+-- COMMAND ----------
 
 -- ---------- as três ferramentas de projeto ----------
 -- excel_tarefas: as 20 planilhas de uma vez (é só apontar para a pasta).
@@ -66,6 +73,8 @@ SELECT `ID`               AS id,
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/excel/',
                 format => 'excel', headerRows => 1, inferColumnTypes => false);
 
+-- COMMAND ----------
+
 -- clickup_tarefas: cada arquivo é UMA lista (um projeto) com as tarefas dentro.
 -- explode() abre a lista: uma linha por tarefa. O resto fica como veio:
 -- status é uma estrutura, datas são milissegundos, campos personalizados são uma lista.
@@ -80,6 +89,8 @@ FROM (
                     format => 'json', multiLine => true)
 );
 
+-- COMMAND ----------
+
 -- msproject_tarefas: cada <Task> do XML vira uma linha. Inclui as tarefas-resumo
 -- (as fases e o projeto inteiro), que somam as horas das tarefas de baixo.
 CREATE OR REPLACE TABLE lakehouse_vertice.bronze.msproject_tarefas AS
@@ -88,17 +99,24 @@ SELECT * EXCEPT (_rescued_data),
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/msproject/',
                 format => 'xml', rowTag => 'Task');
 
+-- COMMAND ----------
+
 -- ---------- rh e timesheet ----------
 -- colaboradores: as 520 pessoas: papel, senioridade, custo/hora, admissão e desligamento
 CREATE OR REPLACE TABLE lakehouse_vertice.bronze.colaboradores AS
 SELECT * EXCEPT (_rescued_data)
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/rh/colaboradores.csv',
                 format => 'csv', header => true, inferColumnTypes => false);
+
+-- COMMAND ----------
+
 -- apontamentos: horas disponíveis x horas apontadas, por pessoa, projeto e semana
 CREATE OR REPLACE TABLE lakehouse_vertice.bronze.apontamentos AS
 SELECT * EXCEPT (_rescued_data)
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/timesheet/apontamentos.csv',
                 format => 'csv', header => true, inferColumnTypes => false);
+
+-- COMMAND ----------
 
 -- ---------- financeiro ----------
 -- custos: cada lançamento de custo real (folha alocada, consultoria, cloud, licenças...)
@@ -107,12 +125,16 @@ SELECT * EXCEPT (_rescued_data)
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/financeiro/custos.csv',
                 format => 'csv', header => true, inferColumnTypes => false);
 
+-- COMMAND ----------
+
 -- ---------- compras ----------
 -- entregas_fornecedor: o que cada consultoria prometeu entregar, e quando entregou
 CREATE OR REPLACE TABLE lakehouse_vertice.bronze.entregas_fornecedor AS
 SELECT * EXCEPT (_rescued_data)
 FROM read_files('/Volumes/lakehouse_vertice/bronze/raw/compras/entregas_fornecedor.csv',
                 format => 'csv', header => true, inferColumnTypes => false);
+
+-- COMMAND ----------
 
 -- ---------- conferência ----------
 -- 9 tabelas. Se alguma vier com 0 linhas, o arquivo não subiu para o volume.

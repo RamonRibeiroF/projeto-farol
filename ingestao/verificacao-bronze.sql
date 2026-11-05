@@ -1,3 +1,5 @@
+-- Databricks notebook source
+
 -- Verificação da camada bronze
 -- Confere se o seu ambiente chegou nos mesmos números de referência do projeto.
 -- Cada linha mostra o esperado, o obtido e se bateu. Se algo der "CONFIRA",

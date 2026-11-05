@@ -1,7 +1,9 @@
+-- Databricks notebook source
+
 -- ##########################################################################
 -- ANÁLISE EXPLORATÓRIA EM SQL NA CAMADA BRONZE (partes 1 a 5)
 -- ##########################################################################
--- Execute de cima para baixo, um bloco por vez: selecione o bloco e Ctrl+Enter.
+-- Execute de cima para baixo, uma célula por vez (Shift+Enter).
 -- Cada bloco diz o que queremos achar, o que cada comando faz e o que deve aparecer.
 --
 --   PARTE 1  SELECT                      o que existe no catálogo?
@@ -33,12 +35,16 @@ SELECT *
 FROM lakehouse_vertice.bronze.projetos
 LIMIT 10;
 
+-- COMMAND ----------
+
 -- 2. Quantos projetos a Vértice tem?
 --    COUNT(*)   conta as linhas
 --    AS nome    dá um nome para a coluna do resultado
 --    Resultado esperado: 60.
 SELECT COUNT(*) AS projetos
 FROM lakehouse_vertice.bronze.projetos;
+
+-- COMMAND ----------
 
 -- ============================================
 -- PARTE 2: ORDER BY, CAST e DISTINCT — os maiores contratos
@@ -57,6 +63,8 @@ FROM lakehouse_vertice.bronze.projetos
 ORDER BY valor_contrato DESC
 LIMIT 5;
 
+-- COMMAND ----------
+
 -- 2. A correção: converter o texto em número antes de ordenar.
 --    CAST(coluna AS DECIMAL(18,2))   transforma o texto em número com 2 casas decimais
 --    Resultado esperado: o maior contrato de verdade é o PRJ-017, R$ 15,3 mi.
@@ -66,6 +74,8 @@ FROM lakehouse_vertice.bronze.projetos
 ORDER BY valor_numero DESC
 LIMIT 5;
 
+-- COMMAND ----------
+
 -- 3. Em quais ferramentas os projetos vivem?
 --    DISTINCT   tira as repetições: cada valor aparece uma vez só
 --    Resultado esperado: 8 jeitos de escrever 3 ferramentas: 'Excel', 'excel', 'Planilha',
@@ -74,6 +84,8 @@ LIMIT 5;
 SELECT DISTINCT ferramenta
 FROM lakehouse_vertice.bronze.projetos
 ORDER BY ferramenta;
+
+-- COMMAND ----------
 
 -- ============================================
 -- PARTE 3: WHERE — filtrar, e achar a sujeira
@@ -97,6 +109,8 @@ SELECT COUNT(*) AS formato_brasileiro
 FROM lakehouse_vertice.bronze.projetos
 WHERE data_inicio LIKE '%/%';
 
+-- COMMAND ----------
+
 -- 2. Excel: a linha de TOTAL que o gerente deixou no fim de cada planilha.
 --    Resultado esperado: 20 linhas, uma por planilha. Quem soma a coluna de horas inteira
 --    conta tudo duas vezes.
@@ -104,11 +118,15 @@ SELECT arquivo, tarefa, horas_previstas
 FROM lakehouse_vertice.bronze.excel_tarefas
 WHERE tarefa = 'TOTAL';
 
+-- COMMAND ----------
+
 -- 3. Financeiro: custo com vírgula decimal ('12345,67'). Para o computador, isso não é número.
 --    Resultado esperado: 671 lançamentos. O parte 4 mostra o estrago.
 SELECT COUNT(*) AS com_virgula
 FROM lakehouse_vertice.bronze.custos
 WHERE valor LIKE '%,%';
+
+-- COMMAND ----------
 
 -- 4. Combinar condições: projetos de VAREJO que estão EM ANDAMENTO.
 --    AND   as duas condições precisam valer ao mesmo tempo
@@ -118,6 +136,8 @@ FROM lakehouse_vertice.bronze.projetos
 WHERE status = 'em_andamento'
   AND segmento = 'varejo';
 
+-- COMMAND ----------
+
 -- 5. Os projetos que vivem no Excel. Note que a ferramenta está escrita de 8 jeitos (parte 2).
 --    IN (...)   "é um destes valores": vale como três igualdades ligadas por OR
 --    Resultado esperado: 20 projetos. Com WHERE ferramenta = 'Excel' sairiam menos: os escritos
@@ -126,6 +146,8 @@ SELECT projeto_id, cliente, ferramenta
 FROM lakehouse_vertice.bronze.projetos
 WHERE ferramenta IN ('Excel', 'excel', 'Planilha');
 
+-- COMMAND ----------
+
 -- 6. Projeto sem o código da ferramenta: ninguém sabe onde está o cronograma dele.
 --    IS NULL   a coluna está vazia. Atenção: "= NULL" não funciona, nunca dá verdadeiro.
 --    Resultado esperado: 2 projetos (PRJ-009 e PRJ-012).
@@ -133,12 +155,16 @@ SELECT projeto_id, nome_projeto, ferramenta, codigo_ferramenta
 FROM lakehouse_vertice.bronze.projetos
 WHERE codigo_ferramenta IS NULL;
 
+-- COMMAND ----------
+
 -- 7. A mesma consultoria digitada de vários jeitos em compras.
 --    lower(...)   põe tudo em minúscula, para o LIKE achar 'Forge', 'FORGE' e 'forge'
 --    Resultado esperado: 4 jeitos de escrever CodeForge. Quem soma "por fornecedor" acha 4 fornecedores.
 SELECT DISTINCT fornecedor
 FROM lakehouse_vertice.bronze.entregas_fornecedor
 WHERE lower(fornecedor) LIKE '%forge%';
+
+-- COMMAND ----------
 
 -- ============================================
 -- PARTE 4: GROUP BY — para onde vai o dinheiro da Vértice?
@@ -159,6 +185,8 @@ SELECT categoria,
 FROM lakehouse_vertice.bronze.custos
 GROUP BY categoria;
 
+-- COMMAND ----------
+
 -- 2. A correção: trocar a vírgula por ponto ANTES de converter.
 --    replace(valor, ',', '.')   troca ',' por '.'
 --    ROUND(x / 1000000, 1)      em milhões, com 1 casa decimal
@@ -169,6 +197,8 @@ SELECT categoria,
 FROM lakehouse_vertice.bronze.custos
 GROUP BY categoria
 ORDER BY custo_milhoes DESC;
+
+-- COMMAND ----------
 
 -- ============================================
 -- PARTE 5: UNION — as três ferramentas numa fila só
@@ -202,6 +232,8 @@ UNION ALL
 SELECT 'clickup'   AS ferramenta, COUNT(*) AS linhas FROM lakehouse_vertice.bronze.clickup_tarefas
 UNION ALL
 SELECT 'msproject' AS ferramenta, COUNT(*) AS linhas FROM lakehouse_vertice.bronze.msproject_tarefas;
+
+-- COMMAND ----------
 
 -- 2. Traduzir UMA ferramenta: o Excel nas 7 colunas.
 --
@@ -240,6 +272,8 @@ SELECT -- o projeto está no nome do arquivo: 'Cronograma PRJ-002.xlsx' → pega
 FROM lakehouse_vertice.bronze.excel_tarefas
 WHERE tarefa <> 'TOTAL'                     -- fora a linha de TOTAL (parte 3)
 LIMIT 10;
+
+-- COMMAND ----------
 
 -- 3. O rascunho: as três ferramentas traduzidas e empilhadas, guardadas numa view.
 --    CREATE OR REPLACE VIEW nome AS ...   guarda a consulta com um nome. Não copia o dado:
@@ -300,6 +334,8 @@ SELECT regexp_extract(arquivo, 'PRJ-[0-9]{3}', 0),
 FROM lakehouse_vertice.bronze.msproject_tarefas
 WHERE Summary = 0;
 
+-- COMMAND ----------
+
 -- 4. Com tudo numa fila só, as horas de cada projeto.
 --    horas agregadas  = quanto ESTÁ pronto:        horas da tarefa × % concluído
 --    horas planejadas = quanto DEVIA estar pronto:  horas da tarefa × quanto do prazo da tarefa
@@ -316,6 +352,8 @@ SELECT projeto_id,
 FROM lakehouse_vertice.bronze.rascunho_tarefas
 GROUP BY projeto_id, ferramenta
 ORDER BY projeto_id;
+
+-- COMMAND ----------
 
 -- 5. A resposta para o dono: o SPI de cada projeto em andamento.
 --    SPI = agregadas ÷ planejadas      abaixo de 1 é atraso (0,80 = andou 80% do que devia)

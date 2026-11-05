@@ -1,3 +1,5 @@
+-- Databricks notebook source
+
 -- ============================================
 -- CUSTO DO ATRASO: quanto custa? O estouro e o farol do gerente
 -- ============================================
@@ -58,6 +60,8 @@ JOIN custo c USING (projeto_id)
 JOIN farol f USING (projeto_id)
 WHERE p.status = 'em_andamento'
 ORDER BY spi;
+
+-- COMMAND ----------
 
 -- 2. O número para o dono: quanto a carteira vai estourar, somando só quem estoura.
 --    (Projeto que está gastando menos que o previsto não "compensa" o que outro queima.)
