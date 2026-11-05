@@ -1,0 +1,690 @@
+{
+  "datasets": [
+    {
+      "name": "ds_projetos",
+      "displayName": "Projetos em andamento (bronze)",
+      "queryLines": [
+        "-- Tudo na bronze é texto e cada ferramenta tem seu formato: este painel lê o\n",
+        "-- rascunho_tarefas (parte 5 de analises/01-sql-na-bronze.sql), que empilha Excel, ClickUp e MS Project à mão.\n",
+        "-- É o imposto que a camada silver vai eliminar.\n",
+        "WITH v AS (\n",
+        "  SELECT projeto_id, max(ferramenta) AS ferramenta,\n",
+        "         SUM(horas) AS horas_totais,\n",
+        "         SUM(horas * pct_concluido / 100) AS horas_agregadas,\n",
+        "         SUM(horas * GREATEST(0, LEAST(1, datediff(DATE'2026-10-16', inicio_baseline)\n",
+        "                  / datediff(fim_baseline, inicio_baseline)))) AS horas_planejadas\n",
+        "  FROM rascunho_tarefas\n",
+        "  GROUP BY projeto_id\n",
+        "),\n",
+        "c AS (SELECT projeto_id, SUM(CAST(replace(valor, ',', '.') AS DECIMAL(18,2))) AS ac FROM custos GROUP BY projeto_id),\n",
+        "f AS (SELECT projeto_id, lower(farol) AS farol FROM status_semanal WHERE data_status = '2026-10-16'),\n",
+        "o AS (\n",
+        "  SELECT p.projeto_id, concat(p.projeto_id, ' · ', p.nome_projeto) AS projeto, p.cliente, p.segmento,\n",
+        "         v.ferramenta, f.farol,\n",
+        "         CAST(p.valor_contrato AS DECIMAL(18,2)) AS valor_contrato,\n",
+        "         CAST(p.orcamento_custo AS DECIMAL(18,2)) AS orcamento,\n",
+        "         datediff(CAST(p.data_fim_baseline AS DATE),\n",
+        "                  coalesce(try_to_date(p.data_inicio, 'yyyy-MM-dd'), try_to_date(p.data_inicio, 'dd/MM/yyyy'))) AS duracao,\n",
+        "         v.horas_agregadas / v.horas_planejadas AS spi,\n",
+        "         CAST(p.orcamento_custo AS DECIMAL(18,2)) * v.horas_agregadas / v.horas_totais / c.ac AS cpi\n",
+        "  FROM projetos p JOIN v USING (projeto_id) JOIN c USING (projeto_id) LEFT JOIN f USING (projeto_id)\n",
+        "  WHERE p.status = 'em_andamento'\n",
+        ")\n",
+        "SELECT projeto_id, projeto, cliente, segmento, ferramenta, farol, valor_contrato, orcamento,\n",
+        "       ROUND(spi, 2) AS spi,\n",
+        "       ROUND(cpi, 2) AS cpi,\n",
+        "       CASE WHEN LEAST(spi, cpi) < 0.8 THEN 'crítico'\n",
+        "            WHEN LEAST(spi, cpi) < 0.9 THEN 'atenção' ELSE 'ok' END AS situacao,\n",
+        "       CASE WHEN LEAST(spi, cpi) < 0.8 THEN 1 ELSE 0 END AS critico,\n",
+        "       CASE WHEN LEAST(spi, cpi) < 0.9 THEN 1 ELSE 0 END AS em_risco,\n",
+        "       CASE WHEN farol = 'verde' AND spi < 0.9 THEN 1 ELSE 0 END AS melancia,\n",
+        "       GREATEST(0, orcamento / cpi - orcamento) AS estouro_previsto,\n",
+        "       (valor_contrato - orcamento / cpi) / valor_contrato AS margem_projetada,\n",
+        "       ROUND(duracao / spi - duracao) AS atraso_projetado_dias\n",
+        "FROM o\n",
+        "ORDER BY LEAST(spi, cpi)\n"
+      ]
+    },
+    {
+      "name": "ds_custos",
+      "displayName": "Custos (bronze)",
+      "queryLines": [
+        "SELECT date_trunc('MONTH', CAST(data AS DATE)) AS mes,\n",
+        "       categoria,\n",
+        "       CAST(replace(valor, ',', '.') AS DECIMAL(18,2)) AS valor\n",
+        "FROM custos\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "portfolio",
+      "displayName": "Portfólio (bronze)",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1",
+      "layout": [
+        {
+          "widget": {
+            "name": "titulo",
+            "textbox_spec": "# Projeto Farol · Torre de Controle da Vértice Tecnologia\n\n**Quais projetos estão mais atrasados e quanto isso custa?** Primeira versão do painel: lê a camada **bronze**, com as tarefas do Excel, do ClickUp e do MS Project empilhadas à mão. Repare no SQL dos datasets: `CAST`, `replace` e `try_to_date` em toda coluna. Hoje do dataset: 16/10/2026."
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-carteira",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "sum(valor_contrato)",
+                      "expression": "SUM(`valor_contrato`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(valor_contrato)",
+                  "displayName": "Carteira em andamento",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Carteira em andamento"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-risco",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "sum(em_risco)",
+                      "expression": "SUM(`em_risco`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(em_risco)",
+                  "displayName": "Projetos com SPI ou CPI < 0,9",
+                  "format": {
+                    "type": "number-plain"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Projetos com SPI ou CPI < 0,9"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-criticos",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "sum(critico)",
+                      "expression": "SUM(`critico`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(critico)",
+                  "displayName": "Projetos críticos (< 0,8)",
+                  "format": {
+                    "type": "number-plain"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Projetos críticos (< 0,8)"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-melancia",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "sum(melancia)",
+                      "expression": "SUM(`melancia`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(melancia)",
+                  "displayName": "Farol verde com SPI < 0,9",
+                  "format": {
+                    "type": "number-plain"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Farol verde com SPI < 0,9"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "secao-risco",
+            "textbox_spec": "## Onde está o problema\n\nSPI < 1 é atraso; CPI < 1 é cada real gastando mais do que entrega. Clique numa barra para filtrar a tabela."
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "spi-projeto",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "projeto",
+                      "expression": "`projeto`"
+                    },
+                    {
+                      "name": "min(spi)",
+                      "expression": "MIN(`spi`)"
+                    },
+                    {
+                      "name": "situacao",
+                      "expression": "`situacao`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "y": {
+                  "fieldName": "projeto",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x"
+                    }
+                  },
+                  "displayName": "Projeto"
+                },
+                "x": {
+                  "fieldName": "min(spi)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "SPI"
+                },
+                "color": {
+                  "fieldName": "situacao",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "crítico",
+                        "color": "#FF5F46"
+                      },
+                      {
+                        "value": "atenção",
+                        "color": "#F6C344"
+                      },
+                      {
+                        "value": "ok",
+                        "color": "#22C2F4"
+                      }
+                    ]
+                  },
+                  "displayName": "Situação"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "SPI por projeto (do mais atrasado ao mais adiantado)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 7,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "situacao-ferramenta",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "ferramenta",
+                      "expression": "`ferramenta`"
+                    },
+                    {
+                      "name": "situacao",
+                      "expression": "`situacao`"
+                    },
+                    {
+                      "name": "count(projeto_id)",
+                      "expression": "COUNT(`projeto_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "ferramenta",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Ferramenta"
+                },
+                "y": {
+                  "fieldName": "count(projeto_id)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Projetos"
+                },
+                "color": {
+                  "fieldName": "situacao",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "crítico",
+                        "color": "#FF5F46"
+                      },
+                      {
+                        "value": "atenção",
+                        "color": "#F6C344"
+                      },
+                      {
+                        "value": "ok",
+                        "color": "#22C2F4"
+                      }
+                    ]
+                  },
+                  "displayName": "Situação"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Projetos em andamento por ferramenta e situação"
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 9,
+            "width": 5,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "secao-custo",
+            "textbox_spec": "## Para onde vai o dinheiro\n\nCusto real por mês e categoria. Sem trocar a vírgula decimal por ponto, 671 lançamentos somem do total em silêncio."
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "custo-mes",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_custos",
+                  "fields": [
+                    {
+                      "name": "monthly(mes)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `mes`)"
+                    },
+                    {
+                      "name": "categoria",
+                      "expression": "`categoria`"
+                    },
+                    {
+                      "name": "sum(valor)",
+                      "expression": "SUM(`valor`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(mes)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Mês"
+                },
+                "y": {
+                  "fieldName": "sum(valor)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Custo real",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "categoria",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Categoria"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Custo real por mês"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "secao-tabela",
+            "textbox_spec": "## Todos os projetos em andamento\n\nOrdenados do pior para o melhor. Compare o **farol do gerente** com a situação calculada: o manual diz que verde é só com SPI ≥ 0,95."
+          },
+          "position": {
+            "x": 0,
+            "y": 26,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "tabela-projetos",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_projetos",
+                  "fields": [
+                    {
+                      "name": "projeto",
+                      "expression": "`projeto`"
+                    },
+                    {
+                      "name": "cliente",
+                      "expression": "`cliente`"
+                    },
+                    {
+                      "name": "ferramenta",
+                      "expression": "`ferramenta`"
+                    },
+                    {
+                      "name": "spi",
+                      "expression": "`spi`"
+                    },
+                    {
+                      "name": "cpi",
+                      "expression": "`cpi`"
+                    },
+                    {
+                      "name": "situacao",
+                      "expression": "`situacao`"
+                    },
+                    {
+                      "name": "farol",
+                      "expression": "`farol`"
+                    },
+                    {
+                      "name": "estouro_previsto",
+                      "expression": "`estouro_previsto`"
+                    },
+                    {
+                      "name": "margem_projetada",
+                      "expression": "`margem_projetada`"
+                    },
+                    {
+                      "name": "atraso_projetado_dias",
+                      "expression": "`atraso_projetado_dias`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "projeto",
+                    "displayName": "Projeto"
+                  },
+                  {
+                    "fieldName": "cliente",
+                    "displayName": "Cliente"
+                  },
+                  {
+                    "fieldName": "ferramenta",
+                    "displayName": "Ferramenta"
+                  },
+                  {
+                    "fieldName": "spi",
+                    "displayName": "SPI"
+                  },
+                  {
+                    "fieldName": "cpi",
+                    "displayName": "CPI"
+                  },
+                  {
+                    "fieldName": "situacao",
+                    "displayName": "Situação"
+                  },
+                  {
+                    "fieldName": "farol",
+                    "displayName": "Farol do gerente"
+                  },
+                  {
+                    "fieldName": "estouro_previsto",
+                    "displayName": "Estouro previsto",
+                    "format": {
+                      "type": "number-currency",
+                      "currencyCode": "BRL",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 0
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "margem_projetada",
+                    "displayName": "Margem projetada",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 1
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "atraso_projetado_dias",
+                    "displayName": "Atraso projetado (dias)"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Projetos em andamento"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 28,
+            "width": 12,
+            "height": 9
+          }
+        }
+      ]
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#F5F6FC",
+        "dark": "#14141A"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#1E1E24"
+      },
+      "fontColor": {
+        "light": "#14141A",
+        "dark": "#F5F6FC"
+      },
+      "selectionColor": {
+        "light": "#0059DB",
+        "dark": "#22C2F4"
+      },
+      "visualizationColors": [
+        "#0059DB",
+        "#22C2F4",
+        "#F6C344",
+        "#FF8A4C",
+        "#9B6BDB",
+        "#3ECF8E",
+        "#6E7180"
+      ],
+      "widgetHeaderAlignment": "LEFT",
+      "widgetCornerRadius": 12
+    }
+  }
+}

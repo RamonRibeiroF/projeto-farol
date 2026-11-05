@@ -1,0 +1,59 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "a1000000000000000000000000000001",
+        "question": [
+          "Quais projetos estão atrasados, e de quais clientes?"
+        ]
+      },
+      {
+        "id": "a1000000000000000000000000000002",
+        "question": [
+          "Quanto esse atraso vai me custar?"
+        ]
+      },
+      {
+        "id": "a1000000000000000000000000000003",
+        "question": [
+          "Tenho gente parada enquanto outro projeto pede gente?"
+        ]
+      },
+      {
+        "id": "a1000000000000000000000000000004",
+        "question": [
+          "O que vai dar errado no próximo mês, e o que eu faço agora?"
+        ]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "lakehouse_vertice.bronze.apontamentos"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.clickup_tarefas"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.colaboradores"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.custos"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.excel_tarefas"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.msproject_tarefas"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.projetos"
+      },
+      {
+        "identifier": "lakehouse_vertice.bronze.status_semanal"
+      }
+    ]
+  }
+}
