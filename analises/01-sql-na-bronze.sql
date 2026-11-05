@@ -28,7 +28,7 @@
 --    LIMIT 10   só as 10 primeiras linhas
 --    Resultado esperado: 10 projetos com cliente, valor do contrato, prazo e a coluna ferramenta
 --    (Excel, ClickUp ou MS Project): é onde o cronograma de cada um vive. Repare que a
---    mesma ferramenta aparece escrita de jeitos diferentes. Volta no parte 2.
+--    mesma ferramenta aparece escrita de jeitos diferentes. Volta na parte 2.
 SELECT *
 FROM lakehouse_vertice.bronze.projetos
 LIMIT 10;
@@ -118,7 +118,7 @@ FROM lakehouse_vertice.bronze.projetos
 WHERE status = 'em_andamento'
   AND segmento = 'varejo';
 
--- 5. Os projetos que vivem no Excel. Note que a ferramenta está escrita de 8 jeitos (parte 2)?
+-- 5. Os projetos que vivem no Excel. Note que a ferramenta está escrita de 8 jeitos (parte 2).
 --    IN (...)   "é um destes valores": vale como três igualdades ligadas por OR
 --    Resultado esperado: 20 projetos. Com WHERE ferramenta = 'Excel' sairiam menos: os escritos
 --    'excel' e 'Planilha' ficariam de fora, sem nenhum aviso.
@@ -153,7 +153,7 @@ WHERE lower(fornecedor) LIKE '%forge%';
 --    GROUP BY categoria   junta as linhas da mesma categoria e faz a conta dentro de cada grupo
 --    SUM(...)             soma a coluna dentro do grupo
 --    O valor é texto, então primeiro CAST para número (parte 2).
---    Resultado esperado: um ERRO. É de propósito: '1827,44' não vira número. É a vírgula do parte 3.
+--    Resultado esperado: um ERRO. É de propósito: '1827,44' não vira número. É a vírgula da parte 3.
 SELECT categoria,
        SUM(CAST(valor AS DECIMAL(18,2))) AS custo
 FROM lakehouse_vertice.bronze.custos
