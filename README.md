@@ -7,6 +7,12 @@ modelo de previsão e um app de decisão, com IA lendo status semanais e contrat
 **Stack:** Databricks Free Edition (serverless) · SQL · Python · Unity Catalog · Lakeflow · AI/BI Dashboards ·
 Genie · MLflow · Databricks Apps · Lakebase · Claude Code
 
+> **Sobre este repositório.** É o registro do meu estudo da **Imersão Databricks + Claude Code**, da
+> [Jornada de Dados](https://suajornadadedados.com.br), criada por **Luciano Vasconcelos**
+> ([material original](https://github.com/lvgalvao/ImersaoControlTower)). O case da Vértice Tecnologia, o dataset
+> sintético e o código-base vêm do material da imersão. O que é meu aqui: a organização do repositório, a
+> documentação e o registro do que aprendi a cada etapa. Veja os [créditos](NOTICE.md).
+
 ---
 
 ## 🧭 O problema
@@ -43,6 +49,17 @@ Regra de corte: **SPI ou CPI < 0,9 = atenção · < 0,8 = crítico.**
 ```
 
 Os KPIs são definidos **uma vez** (Metric Views no Unity Catalog) e reusados no dashboard, no Genie, no app e no agente.
+
+## 🧠 Decisões de engenharia
+
+| Decisão | Por quê |
+|---|---|
+| Bronze guarda o dado como veio (`inferColumnTypes => false` em CSV e Excel) | inferir tipo esconderia datas em dois formatos e vírgula decimal: a sujeira sumiria antes de ser vista |
+| Dataset determinístico (seed 42) com validador dos padrões | qualquer execução reproduz os mesmos números, e uma mudança no gerador que quebre a história é detectada |
+| "Hoje" fixo em `2026-10-16`, nunca `current_date()` | o resultado das análises não muda com o dia em que são executadas |
+| Dashboard e Genie definidos como código (JSON) | versionados no Git, sem divergência entre o workspace e o repositório |
+| Verificação com valores esperados (`verificacao-bronze.sql`) | a carga é testada: cada contagem e total de referência retorna `ok` ou `CONFIRA` |
+| KPIs definidos uma vez, em Metric Views (próximas etapas) | uma fonte da verdade para dashboard, Genie e app |
 
 ## 🗺️ Estado do projeto
 
@@ -154,4 +171,7 @@ vírgula decimal, estornos, pessoa duplicada, status vazio) e é tratada na cama
 
 ---
 
-Dados e empresas fictícios.
+## Créditos
+
+Imersão Databricks + Claude Code, da [Jornada de Dados](https://suajornadadedados.com.br), por **Luciano Vasconcelos**.
+Detalhes em [NOTICE.md](NOTICE.md). Dados e empresas fictícios.
