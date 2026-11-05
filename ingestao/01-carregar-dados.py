@@ -82,4 +82,4 @@ assert r.returncode == 0, r.stderr or "algum padrão falhou"
 
 # MAGIC %md
 # MAGIC ## Pronto
-# MAGIC Agora abra o **`01-ingestao-bronze.sql`** no SQL Editor e rode tudo: os arquivos viram as 9 tabelas da bronze.
+# MAGIC Agora abra o notebook **`02-bronze`** e rode tudo: os arquivos viram as 9 tabelas da bronze.

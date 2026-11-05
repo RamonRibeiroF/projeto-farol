@@ -17,6 +17,16 @@ O erro é de **resolução de DNS**, antes de qualquer resposta da API. A rede d
 resolve uma lista de domínios liberados (repositórios de pacotes e o GitHub, por exemplo). A BrasilAPI não está nela.
 O mesmo código, no mesmo workspace, funcionou ao trocar a URL por `raw.githubusercontent.com`.
 
+**A restrição depende do workspace.** Em 05/11/2026 o mesmo teste foi repetido em dois workspaces Free Edition:
+
+| Workspace | Cadastro | brasilapi.com.br | Supabase Storage | raw.githubusercontent.com |
+|---|---|---|---|---|
+| 1 | e-mail Microsoft | não resolve | inacessível (`EndpointConnectionError`) | ok |
+| 2 | conta Google | `200`, 14 feriados | porta 443 abre | ok |
+
+Não há documentação que explique a diferença; o que se observou foi só isso. Por isso o processo abaixo não
+assume o bloqueio: testa a chamada original primeiro.
+
 ## Decisão
 
 Para toda chamada de API externa, seguir este processo:
@@ -32,7 +42,8 @@ A diferença é que a fonte é um espelho estático, e não a API viva.
 ## Consequências
 
 - A tabela não acompanha mudanças da API original: os dados são uma foto de 2026.
-- Em um ambiente sem essa restrição (workspace pago, por exemplo), basta voltar para a URL original.
+- Em um ambiente sem essa restrição (o workspace 2, por exemplo), basta voltar para a URL original.
+- O espelho no GitHub funciona nos dois workspaces, então o notebook do repositório continua apontando para ele.
 
 ## Código original (BrasilAPI)
 
@@ -59,5 +70,5 @@ url = "https://raw.githubusercontent.com/RamonRibeiroF/projeto-farol/main/data/f
 
 | Notebook | API original | Situação no Free Edition | Espelho |
 |---|---|---|---|
-| `ingestao/01_ingestao_api.py` | `brasilapi.com.br/api/feriados/v1/2026` | bloqueada (DNS) | `data/feriados-2026.json` |
-| `ingestao/02_ingestao_boto3.py` (a fazer) | storage S3 (Supabase) | a testar | |
+| `ingestao/01_ingestao_api.py` | `brasilapi.com.br/api/feriados/v1/2026` | workspace 1: bloqueada (DNS) · workspace 2: funciona | `data/feriados-2026.json` |
+| `ingestao/02_ingestao_boto3.py` | storage S3 (Supabase) | workspace 1: inacessível · workspace 2: porta 443 abre, carga a confirmar | |
