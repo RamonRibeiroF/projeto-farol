@@ -24,8 +24,12 @@ O mesmo código, no mesmo workspace, funcionou ao trocar a URL por `raw.githubus
 | 1 | e-mail Microsoft | não resolve | inacessível (`EndpointConnectionError`) | ok |
 | 2 | conta Google | `200`, 14 feriados | porta 443 abre | ok |
 
-Não há documentação que explique a diferença; o que se observou foi só isso. Por isso o processo abaixo não
-assume o bloqueio: testa a chamada original primeiro.
+**Como as contas foram criadas.** O workspace 1 foi aberto com um e-mail da Microsoft; o workspace 2, com a conta
+Google. Fora isso, o procedimento foi o mesmo (Free Edition, serverless, mesmo repositório e mesmos notebooks).
+No workspace 2 o job `Ingestao` (tarefas `IngestaoApi` e `IngestaoAWS`) terminou com sucesso em 05/11/2026,
+1 min 58 s. O que se observou é uma correlação com o tipo de conta usada no cadastro; a causa não foi confirmada e
+não encontrei documentação que explique a diferença. Por isso o processo abaixo não assume o bloqueio: testa a
+chamada original primeiro, e quem cadastrar outro workspace deve repetir o teste de rede.
 
 ## Decisão
 
@@ -71,4 +75,4 @@ url = "https://raw.githubusercontent.com/RamonRibeiroF/projeto-farol/main/data/f
 | Notebook | API original | Situação no Free Edition | Espelho |
 |---|---|---|---|
 | `ingestao/01_ingestao_api.py` | `brasilapi.com.br/api/feriados/v1/2026` | workspace 1: bloqueada (DNS) · workspace 2: funciona | `data/feriados-2026.json` |
-| `ingestao/02_ingestao_boto3.py` | storage S3 (Supabase) | workspace 1: inacessível · workspace 2: porta 443 abre, carga a confirmar | |
+| `ingestao/02_ingestao_boto3.py` | storage S3 (Supabase) | workspace 1: inacessível · workspace 2: funciona (job concluído) | não precisa: o Supabase é a fonte original |
