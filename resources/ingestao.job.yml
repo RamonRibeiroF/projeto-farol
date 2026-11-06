@@ -1,0 +1,42 @@
+# O job "Ingestao" da etapa 2, que era clique no workspace e agora é código.
+# Gerado por `databricks bundle generate job`; os notebooks são os de ingestao/ (não há cópia em src/).
+# As chaves do data lake NÃO ficam aqui: são variáveis do bundle (ver databricks.yml), com o valor em
+# .databricks/bundle/dev/variable-overrides.json, que o .gitignore deixa fora do Git.
+resources:
+  jobs:
+    ingestao:
+      name: Ingestao
+      tasks:
+        - task_key: IngestaoApi
+          disabled: false
+          email_notifications: {}
+          notebook_task:
+            notebook_path: ../ingestao/01_ingestao_api.py
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: IngestaoAWS
+          disabled: false
+          email_notifications: {}
+          environment_key: Default
+          notebook_task:
+            base_parameters:
+              AWS_ACCESS_KEY_ID: ${var.s3_access_key_id}
+              AWS_DEFAULT_REGION: us-east-1
+              AWS_SECRET_ACCESS_KEY: ${var.s3_secret_access_key}
+              S3_ENDPOINT: https://tjzydhzjykjryzmjqlur.storage.supabase.co/storage/v1/s3
+            notebook_path: ../ingestao/02_ingestao_boto3.py
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+      email_notifications:
+        no_alert_for_skipped_runs: false
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "6"
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}
