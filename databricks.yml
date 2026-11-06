@@ -1,0 +1,35 @@
+# Projeto Farol: a Torre de Controle de Projetos da Vértice Tecnologia, como código.
+#
+# O bundle junta o que antes era clique no workspace: o job de ingestão, e depois as camadas
+# silver e gold, os testes, a IA no texto do status e o dashboard. Tudo roda em serverless.
+#
+# Comandos (sempre com --profile):
+#   databricks bundle validate --profile farol
+#   databricks bundle deploy   --profile farol
+
+bundle:
+  name: farol
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Catálogo do Unity Catalog onde as três camadas moram
+    default: lakehouse_vertice
+
+  # Chaves do data lake (Supabase Storage, protocolo S3). Sem default de propósito: o valor fica em
+  # .databricks/bundle/dev/variable-overrides.json, que o .gitignore deixa fora do Git.
+  # O repositório é público: chave nunca entra em arquivo versionado.
+  s3_access_key_id:
+    description: Chave de acesso do data lake (segredo, fora do Git)
+  s3_secret_access_key:
+    description: Segredo do data lake (segredo, fora do Git)
+
+targets:
+  dev:
+    default: true
+    # Sem `mode: development`: ele prefixaria o nome dos schemas e quebraria o SQL do projeto.
+    # Em troca, o agendamento nasce pausado, para o job não gastar a cota do Free Edition.
+    presets:
+      trigger_pause_status: PAUSED
