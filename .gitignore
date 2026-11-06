@@ -7,6 +7,13 @@ __pycache__/
 .databricks/
 node_modules/
 
+# farol-torre/ (Databricks App)
+farol-torre/node_modules/
+farol-torre/.env
+farol-torre/dist/
+farol-torre/client/dist/
+farol-torre/.databricks/
+
 # Material de referência (não publicar)
 arquivos-luciano/
 

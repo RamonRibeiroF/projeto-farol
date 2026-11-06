@@ -28,7 +28,8 @@ def api(metodo: str, caminho: str, profile: str, corpo: dict | None = None) -> d
     if corpo is not None:
         cmd += ["--json", json.dumps(corpo)]
     for tentativa in range(4):          # rede e limite de taxa do Free Edition: tenta de novo
-        r = subprocess.run(cmd, capture_output=True, text=True)
+        # utf-8 explícito: no Windows o padrão é cp1252 e o "·" do título vira "Â·"
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
         if r.returncode == 0:
             return json.loads(r.stdout or "{}")
         erro = r.stderr.strip() or r.stdout.strip()

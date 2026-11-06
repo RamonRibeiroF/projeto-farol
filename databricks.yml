@@ -13,6 +13,11 @@ bundle:
 include:
   - resources/*.yml
 
+# farol-torre/ é o Databricks App, um bundle próprio: sem isto o deploy da raiz subiria o node_modules inteiro.
+sync:
+  exclude:
+    - "farol-torre/**"
+
 variables:
   catalog:
     description: Catálogo do Unity Catalog onde as três camadas moram

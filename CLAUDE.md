@@ -10,11 +10,12 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 | `ingestao/` | catálogo, carga dos dados no volume (notebook) e tabelas bronze, com verificação |
 | `analises/` | análises SQL exploratórias sobre a bronze |
 | `dashboards/` | dashboards AI/BI como código: `bronze/` (deploy pelo próprio script) e `gold/` (`gerar_dashboard.py` gera o JSON; deploy pelo bundle) |
-| `genie/` | espaço Genie em JSON |
+| `genie/` | Genie como código: `bronze.json` (sem curadoria), `gerar_genie.py` gera `diretoria.geniespace.json` ("Farol · Diretoria", deploy pelo bundle) e `benchmark-diretoria.json` (20 perguntas com SQL de referência) |
 | `data/` | gerador do dataset sintético e validador dos padrões |
 | `tools/` | `run_sql.py` (roda `.sql` statement por statement) e `genie.py` (publica, pergunta, benchmark) |
 | `resources/` | recursos do bundle: job `vertice_farol` e pipeline `vertice_medalhao` |
-| `src/` | `conferencia/` (sql_task da bronze), `silver/` e `gold/` (pipeline Lakeflow, um arquivo por assunto), `testes/` e `ia/` (sql_task) |
+| `farol-torre/` | Databricks App da Torre (AppKit, plugin analytics): bundle próprio, fora do sync da raiz; queries em `config/queries/` |
+| `src/` | `conferencia/` (sql_task da bronze), `silver/` e `gold/` (pipeline Lakeflow, um arquivo por assunto), `testes/`, `ia/` e `metricas/` (sql_task; `metricas/` cria a metric view `gold.mv_projetos`, sem `;` dentro do YAML) |
 
 ## Databricks
 
@@ -26,6 +27,9 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 - Volume não aceita escrita fora de ordem: o `.xlsx` é montado em memória (`data/xlsx_simples.py`).
 - Metric Views só pela API de statements (`tools/run_sql.py` já usa isso).
 - Editar dashboard ou Genie direto no workspace trava o deploy: leve a mudança para o JSON do repositório.
+- Apps: o Free Edition aceita no máximo 3; confira com `databricks apps list` antes de criar. O app roda como service
+  principal: depois do primeiro `bundle deploy` do app, rode `python tools/conceder_acesso.py --profile <perfil> --app farol-torre`
+  (USE CATALOG, USE SCHEMA e SELECT na gold e na silver), senão o build falha com INSUFFICIENT_PERMISSIONS.
 
 ## Dataset
 

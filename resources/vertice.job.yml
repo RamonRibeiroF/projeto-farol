@@ -1,11 +1,13 @@
-# O job vertice_farol: a noite inteira do Farol, da ingestão à IA, em 6 tarefas.
+# O job vertice_farol: o ciclo inteiro do Farol, da ingestão às métricas governadas, em 7 tarefas.
 #   ingestao_feriados    (notebook) feriados nacionais da API pública na bronze
 #   ingestao_data_lake   (notebook) arquivos das 4 ferramentas e do RH baixados do data lake para o volume, e a bronze
 #   conferencia_bronze   (sql)      confere as 9 tabelas da bronze contra a contagem esperada; falha se divergir
 #   medalhao             (pipeline) vertice_medalhao: silver (7 tabelas) e gold
 #   testes_de_qualidade  (sql)      10 testes da silver e da gold; falha dizendo qual quebrou
 #   status_com_ia        (sql)      gold.status_estruturado: IA lê o texto do status, MERGE só dos status novos
+#   metricas_governadas  (sql)      gold.mv_projetos: a metric view com a fórmula de cada KPI da carteira
 # As duas ingestões rodam em paralelo, e os testes e a IA também, depois do medalhão.
+# As métricas governadas esperam os testes E a IA: só publicam a fórmula sobre uma gold que passou nos testes.
 # As chaves do data lake NÃO ficam aqui: são variáveis do bundle (ver databricks.yml), com o valor em
 # .databricks/bundle/dev/variable-overrides.json, que o .gitignore deixa fora do Git.
 resources:
@@ -69,6 +71,16 @@ resources:
             warehouse_id: ${var.warehouse_id}
             file:
               path: ../src/ia/status_estruturado.sql
+
+        # a metric view gold.mv_projetos (YAML sem ponto e vírgula: a sql_task corta o arquivo neles)
+        - task_key: metricas_governadas
+          depends_on:
+            - task_key: testes_de_qualidade
+            - task_key: status_com_ia
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/metricas/metricas.sql
 
       email_notifications:
         no_alert_for_skipped_runs: false

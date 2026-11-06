@@ -74,7 +74,7 @@ Se o benchmark der menos de 16/20, mostre os erros e ajuste a INSTRUÇÃO
 3. Plugue o agente no app farol-torre/ (o do prompt 5), como a tela Perguntar:
    - databricks.yml do app: variáveis genie_space_id e genie_space_name
      (o id do "Farol · Diretoria", pelo bundle summary); no recurso do app,
-     user_api_scopes: [dashboards.genie] e o recurso
+     user_api_scopes: [genie] e o recurso
      { name: genie-space, genie_space: { name, space_id, permission: CAN_RUN } }.
    - app.yaml: env DATABRICKS_GENIE_SPACE_ID com valueFrom: genie-space.
    - server: genie() nos plugins do createApp.
