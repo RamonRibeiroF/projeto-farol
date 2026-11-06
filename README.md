@@ -151,8 +151,8 @@ contato que não exige SQL Editor: o dono abre uma URL.
 recalculada no grão que a pergunta pedir: SPI 0,92 · CPI 0,96 · estouro R$ 6,47 mi · 7 críticos · 4 melancias.
 
 **O agente "Farol · Diretoria"** (Genie como código, recurso do bundle) lê a gold, a metric view e as entregas de
-fornecedor, com instruções de negócio versionadas. Benchmark de 20 perguntas com SQL de referência: **18/20** na
-primeira rodada. As duas falhas eram da referência (filtrava pelo rótulo do projeto, e não pelo código), já corrigida.
+fornecedor, com instruções de negócio versionadas. Benchmark de 20 perguntas com SQL de referência: **20/20**. Na
+primeira rodada deu 18/20, e as duas falhas eram da referência (filtrava pelo rótulo do projeto, e não pelo código).
 
 **O que esta etapa mostrou**
 
