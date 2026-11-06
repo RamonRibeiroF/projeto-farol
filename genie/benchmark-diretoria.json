@@ -13,11 +13,11 @@
   },
   {
     "pergunta": "Qual é o SPI do projeto PRJ-011?",
-    "sql_referencia": "SELECT ROUND(spi, 2) FROM lakehouse_vertice.gold.projeto_situacao_atual WHERE projeto = 'PRJ-011'"
+    "sql_referencia": "SELECT ROUND(spi, 2) FROM lakehouse_vertice.gold.projeto_situacao_atual WHERE projeto_id = 'PRJ-011'"
   },
   {
     "pergunta": "Qual é o CPI do projeto PRJ-009?",
-    "sql_referencia": "SELECT ROUND(cpi, 2) FROM lakehouse_vertice.gold.projeto_situacao_atual WHERE projeto = 'PRJ-009'"
+    "sql_referencia": "SELECT ROUND(cpi, 2) FROM lakehouse_vertice.gold.projeto_situacao_atual WHERE projeto_id = 'PRJ-009'"
   },
   {
     "pergunta": "Qual é o SPI da carteira em andamento?",
