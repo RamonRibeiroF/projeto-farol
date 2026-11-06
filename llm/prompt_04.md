@@ -1,5 +1,5 @@
 Use as skills databricks-core, databricks-dabs e databricks-aibi-dashboards.
-Sempre --profile farol (o profile do meu workspace). Nunca escolha um profile sozinho.
+Sempre --profile <perfil> (o profile do meu workspace). Nunca escolha um profile sozinho.
 Leia o CLAUDE.md e o docs/PRD.md da raiz (não substitua o CLAUDE.md) e use
 tools/run_sql.py para rodar SQL.
 
@@ -66,7 +66,7 @@ Trabalhe direto. Não faça commit nem push: eu reviso antes.
 
 Rode e me mostre a saída:
   python3 dashboards/gold/gerar_dashboard.py
-  databricks bundle validate --profile farol
-  databricks bundle deploy --profile farol
-  databricks bundle summary --profile farol
+  databricks bundle validate --profile <perfil>
+  databricks bundle deploy --profile <perfil>
+  databricks bundle summary --profile <perfil>
 No fim, me diga a URL do dashboard (do bundle summary).

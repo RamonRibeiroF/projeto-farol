@@ -58,6 +58,11 @@ Os KPIs são definidos **uma vez** (Metric Views no Unity Catalog) e reusados no
 | Dataset determinístico (seed 42) com validador dos padrões | qualquer execução reproduz os mesmos números, e uma mudança no gerador que quebre a história é detectada |
 | "Hoje" fixo em `2026-10-16`, nunca `current_date()` | o resultado das análises não muda com o dia em que são executadas |
 | Dashboard e Genie definidos como código (JSON) | versionados no Git, sem divergência entre o workspace e o repositório |
+| Silver e gold em um pipeline Lakeflow (SQL), com `EXPECT ... ON VIOLATION FAIL UPDATE` | a regra de qualidade derruba a atualização em vez de publicar dado errado |
+| 10 testes de negócio em `src/testes/`, com `raise_error`, depois do pipeline | o job falha se a carteira, o custo ou o EV não baterem entre as camadas |
+| IA só onde compensa: regra, palavra-chave ou `ai_classify`/`ai_extract` por faixa de data; `MERGE` incremental | IA custa por linha: 163 dos 3.911 status passam por ela, e a segunda execução não reprocessa nada |
+| Chaves do data lake como variáveis do bundle, com o valor fora do Git | o repositório é público; nenhuma credencial entra em arquivo versionado |
+| Razão não se soma: SPI e CPI da carteira são `SUM(ev)/SUM(pv)` e `SUM(ev)/SUM(ac)` | um projeto pequeno atrasado não pode pesar igual a um grande |
 | Verificação com valores esperados (`verificacao-bronze.sql`) | a carga é testada: cada contagem e total de referência retorna `ok` ou `CONFIRA` |
 | KPIs definidos uma vez, em Metric Views (próximas etapas) | uma fonte da verdade para dashboard, Genie e app |
 | API externa bloqueada no Free Edition: espelho do JSON no GitHub, com o código original documentado | o exercício segue sendo uma chamada HTTP de verdade; ver [decisão 001](docs/decisoes/001-apis-externas-no-free-edition.md) |
@@ -67,9 +72,9 @@ Os KPIs são definidos **uma vez** (Metric Views no Unity Catalog) e reusados no
 | Etapa | Foco | Status |
 |---|---|---|
 | 1 · Ingestão e análise | catálogo, bronze lendo Excel, JSON e XML, análises SQL, dashboard e Genie sobre a bronze | ✅ disponível |
-| 2 · Ingestão automatizada | data lake (S3/boto3), API de feriados, job diário | 🚧 em construção |
-| 3 · Modelagem | bundle, silver, gold, testes, IA no status, metric view, dashboard | 🚧 em construção |
-| 4 · IA e produto | modelo de estouro, Genie curado, app da Torre, agente de contratos | 🚧 em construção |
+| 2 · Ingestão automatizada | data lake (S3/boto3), API de feriados, job | ✅ disponível |
+| 3 · Modelagem | bundle, silver, gold, testes, IA no texto do status, job completo, dashboard sobre a gold | ✅ disponível |
+| 4 · IA e produto | metric views, modelo de estouro, Genie curado, app da Torre, agente de contratos | 🚧 em construção |
 
 ### O que a etapa 1 já responde
 
@@ -81,16 +86,65 @@ Sobre a camada bronze, com as três ferramentas empilhadas à mão em SQL:
 | Estouro previsto se nada mudar | R$ 6,47 mi |
 | Faróis verdes de gerente com SPI abaixo de 0,9 ("melancias") | 4 projetos (de 32 faróis verdes) |
 
+### O que a etapa 3 entrega
+
+O job **`vertice_farol`** (bundle `farol`) roda toda segunda às 6h (no ambiente de desenvolvimento fica pausado):
+ingestão do data lake e dos feriados, conferência da bronze, o pipeline `vertice_medalhao` (silver e gold), e então
+os testes de qualidade e a leitura do texto do status por IA, em paralelo.
+
+![DAG do job vertice_farol](docs/img/etapa-3-job-dag-completo.png)
+
+| Camada | O que tem |
+|---|---|
+| Silver (7 tabelas) | `projetos`, `tarefas`, `status_semanal`, `custos`, `colaboradores`, `apontamentos`, `entregas_fornecedor`: as 3 ferramentas num modelo só, com a sujeira tratada |
+| Gold (4 tabelas) | `fato_projeto_semana` (4.235 linhas), `projeto_situacao_atual` (60), `utilizacao_pessoa_semana` (30.883) e `status_estruturado` (3.911, a causa de cada bloqueio tirada do texto) |
+| Testes | 10 testes de negócio; o job falha se algum não passar |
+
+![Pipeline vertice_medalhao](docs/img/etapa-3-pipeline-medalhao.png)
+
+**Dashboard sobre a gold** (AI/BI, definido como código e publicado pelo bundle):
+
+![Dashboard, página Portfólio](docs/img/etapa-3-dashboard-portfolio.png)
+
+| Página | O que responde | Resultado |
+|---|---|---|
+| Portfólio | quais projetos atrasam e quanto isso custa | carteira R$ 208,6 mi · SPI 0,92 · CPI 0,96 · estouro previsto R$ 6,5 mi · 17 em risco, 7 críticos, 4 melancias |
+| Pessoas | quem está parado e o que trava | as duas SREs seniores no topo do custo da hora parada; o PRJ-011 trava por `falta_sre` há 12 semanas (57 dias de impacto declarado) |
+| Fornecedores | qual consultoria atrasa | CodeForge, 4 grafias no cadastro, prazo 1,41× o prometido, 0% no prazo, 5 entregas vencidas |
+
+![Dashboard, página Pessoas](docs/img/etapa-3-dashboard-pessoas.png)
+![Dashboard, página Fornecedores](docs/img/etapa-3-dashboard-fornecedores.png)
+
+**O que esta etapa mostrou**
+
+- **Limpeza num lugar só.** Na etapa 1 cada gráfico carregava o `CASE` do Excel, o `replace` da vírgula e o filtro do
+  ClickUp. Agora a silver limpa uma vez, e o SQL de cada gráfico cabe em poucas linhas.
+- **Teste por total, não por projeto.** O teste de EV compara a carteira em andamento (diferença < 1%). O PRJ-013 diverge
+  sozinho (3 tarefas do Excel com percentual acima de 100, que a silver limita a 100); isso ficou documentado no teste,
+  sem mexer na regra da silver.
+- **IA com custo medido.** Na primeira execução a tarefa de IA levou 118 s (163 textos); na segunda, 7 s, porque o
+  `MERGE` só insere o que ainda não está na tabela.
+- **A causa do atraso estava escrita.** O texto do status do PRJ-011 pedia SRE toda sexta, e o timesheet mostrava duas
+  SREs paradas em outro projeto. Os dois fatos estavam no dado, em sistemas diferentes; agora estão na mesma tabela.
+- **Rede do Free Edition varia entre workspaces.** Registrado na [decisão 001](docs/decisoes/001-apis-externas-no-free-edition.md).
+
+Para reproduzir esta etapa: [`docs/etapa-3-como-reproduzir.md`](docs/etapa-3-como-reproduzir.md) e os prompts em
+[`llm/`](llm/README.md).
+
 ## 📁 Estrutura
 
 ```
 ingestao/      catálogo, carga dos dados no volume e tabelas bronze, com verificação
 analises/      análises SQL exploratórias sobre a bronze, até o custo do atraso
-dashboards/    dashboard AI/BI de portfólio, gerado como código (JSON)
+dashboards/    dashboards AI/BI gerados como código (JSON): sobre a bronze e sobre a gold
 genie/         espaço Genie sobre a bronze, definido em JSON
 data/          gerador do dataset sintético (seed fixa) e validador dos padrões
 tools/         utilitários: rodar .sql no warehouse, publicar e testar Genie
-docs/          PRD do projeto
+resources/     recursos do bundle: job vertice_farol, pipeline vertice_medalhao e o dashboard da gold
+src/           SQL do job: conferência da bronze, silver, gold, testes e IA no status
+llm/           prompts do Claude Code usados na etapa 3
+docs/          PRD, decisões de engenharia e o passo a passo da etapa 3
+databricks.yml o bundle (variáveis, ambiente dev)
 ```
 
 ## 🚀 Como executar
@@ -159,6 +213,8 @@ vírgula decimal, estornos, pessoa duplicada, status vazio) e é tratada na cama
 | **Bronze · silver · gold** | o dado como chegou · limpo e unificado · pronto para responder à diretoria |
 | **Unity Catalog** | o "endereço" e a portaria de todo dado: `catálogo.schema.tabela`, com dono e permissão |
 | **Volume** | uma pasta de arquivos (xlsx, json, xml, pdf) dentro do catálogo |
+| **Bundle (DAB)** | o job, o pipeline e o dashboard descritos em arquivos YAML no Git e publicados com `bundle deploy` |
+| **Materialized view** | tabela que o pipeline recalcula a partir de uma consulta SQL; é como a silver e a gold são mantidas |
 | **Metric view** | onde mora a fórmula do KPI, para dashboard, Genie e app usarem a mesma |
 | **Genie** | o chat que transforma pergunta em português em SQL sobre as tabelas |
 
