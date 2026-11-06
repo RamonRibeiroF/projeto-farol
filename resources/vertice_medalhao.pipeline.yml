@@ -1,5 +1,6 @@
 # O pipeline medalhão (Lakeflow Spark Declarative Pipelines, SQL, serverless).
-# Silver = schema padrão do pipeline. Quando a gold entrar, ../src/gold/** vai em libraries.
+# Silver = schema padrão do pipeline (lida pelo nome curto); a gold escreve com o nome completo
+# lakehouse_vertice.gold.<tabela>.
 resources:
   pipelines:
     vertice_medalhao:
@@ -12,3 +13,5 @@ resources:
       libraries:
         - glob:
             include: ../src/silver/**
+        - glob:
+            include: ../src/gold/**
