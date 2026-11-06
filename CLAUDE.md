@@ -13,6 +13,8 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 | `genie/` | espaço Genie em JSON |
 | `data/` | gerador do dataset sintético e validador dos padrões |
 | `tools/` | `run_sql.py` (roda `.sql` statement por statement) e `genie.py` (publica, pergunta, benchmark) |
+| `resources/` | recursos do bundle: job `vertice_farol` e pipeline `vertice_medalhao` |
+| `src/` | `conferencia/` (sql_task da bronze) e `silver/` (pipeline Lakeflow, um arquivo por assunto) |
 
 ## Databricks
 
@@ -33,6 +35,28 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 - **A sujeira é conteúdo, não bug.** Não conserte o gerador para limpar dado; a limpeza é na silver.
 - Seed fixa. Se mudar o gerador, rode o validador, regere, recarregue a bronze e atualize os números esperados em
   `ingestao/verificacao-bronze.sql` e no README.
+
+## Silver (regras de limpeza)
+
+Sete tabelas, nem uma a mais: `projetos`, `tarefas`, `status_semanal`, `custos`, `colaboradores`, `apontamentos`,
+`entregas_fornecedor`. Pipeline SQL: `CREATE OR REFRESH MATERIALIZED VIEW` (nunca `CREATE OR REPLACE`),
+`CREATE TEMPORARY VIEW` para o intermediário, `EXPECT ... ON VIOLATION FAIL UPDATE`, `COMMENT` em toda tabela.
+Bronze pelo nome completo; silver só pelo nome. Janela dentro de agregação quebra: janela num CTE, agrega no seguinte.
+
+| Sujeira | Onde | Decisão |
+|---|---|---|
+| data em `yyyy-MM-dd` e `dd/MM/yyyy` | `projetos.data_inicio` | coalesce de dois `try_to_date` |
+| ferramenta de 8 jeitos; código vazio (2) | `projetos` | `excel`/`clickup`/`msproject` por LIKE; Excel cai no `PRJ-xxx` do arquivo, ClickUp no nome da lista |
+| data texto ou número de série; `%` em 3 formatos (11 > 100); linha TOTAL; `'40h'` | `excel_tarefas` | `/` → `dd/MM/yyyy`, senão `date_add(DATE'1899-12-30', n)`; `least(...,100)` com flag; tira TOTAL; tira o `h` |
+| datas em ms; %, fase e baseline em `custom_fields`; status de 12 jeitos | `clickup_tarefas` | `timestamp_millis`; `filter(...)[0].value`; `concluida`/`a_fazer`/`em_andamento` |
+| tarefas-resumo; fase fora da tarefa; `'PT40H0M0S'` | `msproject_tarefas` | `Summary = 0`; `last_value` do OutlineLevel 1; `regexp_extract` |
+| vírgula decimal (671); estorno negativo | `custos` | `replace` antes do CAST (nunca `try_cast`); mantém com flag `estorno` |
+| CodeForge com 4 grafias | `entregas_fornecedor` | normaliza, guarda `fornecedor_como_veio` |
+| pessoa duplicada (COL0102, COL0257, COL0433) | `colaboradores` | fica o cadastro com `papel` em minúsculas |
+| farol `Verde`/`VERDE`; status vazio (51) | `status_semanal` | `lower(trim())`; flag `status_vazio`, não descarta |
+
+Números de teste (seed 42): silver.tarefas 4.917 (Excel 1.643, ClickUp 2.119, MS Project 1.155) · custo real R$ 193,35 mi ·
+5 entregas em atraso, todas da CodeForge · 41 projetos em andamento, 7 críticos e 10 em atenção.
 
 ## Convenções
 

@@ -18,6 +18,10 @@ variables:
     description: Catálogo do Unity Catalog onde as três camadas moram
     default: lakehouse_vertice
 
+  warehouse_id:
+    description: SQL warehouse das sql_task (o Serverless Starter Warehouse do Free Edition)
+    default: cb1688538c275376
+
   # Chaves do data lake (Supabase Storage, protocolo S3). Sem default de propósito: o valor fica em
   # .databricks/bundle/dev/variable-overrides.json, que o .gitignore deixa fora do Git.
   # O repositório é público: chave nunca entra em arquivo versionado.

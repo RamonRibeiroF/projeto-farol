@@ -1,0 +1,14 @@
+# O pipeline medalhão (Lakeflow Spark Declarative Pipelines, SQL, serverless).
+# Silver = schema padrão do pipeline. Quando a gold entrar, ../src/gold/** vai em libraries.
+resources:
+  pipelines:
+    vertice_medalhao:
+      name: vertice_medalhao
+      catalog: ${var.catalog}
+      schema: silver
+      serverless: true
+      photon: true
+      continuous: false
+      libraries:
+        - glob:
+            include: ../src/silver/**
