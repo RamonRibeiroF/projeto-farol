@@ -74,7 +74,7 @@ Os KPIs são definidos **uma vez** (Metric Views no Unity Catalog) e reusados no
 | 1 · Ingestão e análise | catálogo, bronze lendo Excel, JSON e XML, análises SQL, dashboard e Genie sobre a bronze | ✅ disponível |
 | 2 · Ingestão automatizada | data lake (S3/boto3), API de feriados, job | ✅ disponível |
 | 3 · Modelagem | bundle, silver, gold, testes, IA no texto do status, job completo, dashboard sobre a gold | ✅ disponível |
-| 4 · IA e produto | metric views, modelo de estouro, Genie curado, app da Torre, agente de contratos | 🚧 em construção |
+| 4 · IA e produto | app da Torre, metric view, Genie curado (agente) · modelo de estouro e agente de contratos | 🚧 app, metric view e agente ✅ · modelo e contratos pendentes |
 
 ### O que a etapa 1 já responde
 
@@ -131,19 +131,53 @@ os testes de qualidade e a leitura do texto do status por IA, em paralelo.
 Para reproduzir esta etapa: [`docs/etapa-3-como-reproduzir.md`](docs/etapa-3-como-reproduzir.md) e os prompts em
 [`llm/`](llm/README.md).
 
+### O que a etapa 4 entrega (até agora)
+
+**O app "Projeto Farol"** (Databricks App, AppKit, React + TypeScript), com o login do workspace. É o primeiro ponto de
+contato que não exige SQL Editor: o dono abre uma URL.
+
+![App, tela Projetos em risco](docs/img/etapa-4-app-projetos-em-risco.png)
+
+| Tela | O que mostra |
+|---|---|
+| Projetos em risco | 17 de 41 em risco, 7 críticos, 4 melancias, R$ 6,5 mi de estouro; a tabela traz a causa principal lida do status e o farol do gerente ao lado do farol pelo número |
+| Simulador | mover a SRE parada COL0017 (6% de utilização) para o PRJ-011: 150,8 h no mês, R$ 30,1 mil de ociosidade evitada, 19 dias de cronograma recuperados, R$ 8,0 mil de onboarding, **saldo de R$ 22,1 mil** no mês, com a conta explicada na tela |
+| Perguntar | o agente (Genie "Farol · Diretoria") respondendo em português, com as permissões de quem está logado |
+
+![App, simulador de realocação](docs/img/etapa-4-app-simulador.png)
+![App, aba Perguntar](docs/img/etapa-4-app-perguntar.png)
+
+**A metric view `gold.mv_projetos`** guarda a fórmula de cada KPI num lugar só (SPI, CPI, estouro, margem, melancias),
+recalculada no grão que a pergunta pedir: SPI 0,92 · CPI 0,96 · estouro R$ 6,47 mi · 7 críticos · 4 melancias.
+
+**O agente "Farol · Diretoria"** (Genie como código, recurso do bundle) lê a gold, a metric view e as entregas de
+fornecedor, com instruções de negócio versionadas. Benchmark de 20 perguntas com SQL de referência: **18/20** na
+primeira rodada. As duas falhas eram da referência (filtrava pelo rótulo do projeto, e não pelo código), já corrigida.
+
+**O que esta etapa mostrou**
+
+- **O app é um usuário.** Ele roda como service principal e nasce sem acesso: sem `GRANT` na gold e na silver, o build
+  falha. A governança do Unity Catalog vale para a aplicação, não só para pessoas.
+- **Escopos de OAuth mudam.** O escopo `dashboards.genie` está obsoleto; o atual é `genie`. Trocar o escopo não basta:
+  quem já tinha entrado no app precisa autorizar de novo (sessão nova).
+- **O warehouse devolve tudo como texto.** A coluna booleana `melancia` chegava como `"false"`, e o app marcava 🍉 em
+  todas as linhas. Converter explicitamente resolveu.
+- **Benchmark também tem bug.** Antes de mexer na instrução do Genie, vale conferir se a resposta de referência está certa.
+
 ## 📁 Estrutura
 
 ```
 ingestao/      catálogo, carga dos dados no volume e tabelas bronze, com verificação
 analises/      análises SQL exploratórias sobre a bronze, até o custo do atraso
 dashboards/    dashboards AI/BI gerados como código (JSON): sobre a bronze e sobre a gold
-genie/         espaço Genie sobre a bronze, definido em JSON
+genie/         Genie como código: o da bronze (sem curadoria) e o "Farol · Diretoria", com benchmark
 data/          gerador do dataset sintético (seed fixa) e validador dos padrões
 tools/         utilitários: rodar .sql no warehouse, publicar e testar Genie
-resources/     recursos do bundle: job vertice_farol, pipeline vertice_medalhao e o dashboard da gold
-src/           SQL do job: conferência da bronze, silver, gold, testes e IA no status
-llm/           prompts do Claude Code usados na etapa 3
-docs/          PRD, decisões de engenharia e o passo a passo da etapa 3
+resources/     recursos do bundle: job vertice_farol, pipeline vertice_medalhao, dashboard e Genie da gold
+farol-torre/   o app da Torre (Databricks App, AppKit), com bundle próprio
+src/           SQL do job: conferência da bronze, silver, gold, testes, IA no status e a metric view
+llm/           prompts do Claude Code usados nas etapas 3 e 4
+docs/          PRD, decisões de engenharia, passo a passo da etapa 3 e contexto da etapa 4
 databricks.yml o bundle (variáveis, ambiente dev)
 ```
 
