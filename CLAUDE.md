@@ -14,7 +14,7 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 | `data/` | gerador do dataset sintético e validador dos padrões |
 | `tools/` | `run_sql.py` (roda `.sql` statement por statement) e `genie.py` (publica, pergunta, benchmark) |
 | `resources/` | recursos do bundle: job `vertice_farol` e pipeline `vertice_medalhao` |
-| `src/` | `conferencia/` (sql_task da bronze) e `silver/` (pipeline Lakeflow, um arquivo por assunto) |
+| `src/` | `conferencia/` (sql_task da bronze), `silver/` e `gold/` (pipeline Lakeflow, um arquivo por assunto), `testes/` e `ia/` (sql_task) |
 
 ## Databricks
 
@@ -54,6 +54,10 @@ Bronze pelo nome completo; silver só pelo nome. Janela dentro de agregação qu
 | CodeForge com 4 grafias | `entregas_fornecedor` | normaliza, guarda `fornecedor_como_veio` |
 | pessoa duplicada (COL0102, COL0257, COL0433) | `colaboradores` | fica o cadastro com `papel` em minúsculas |
 | farol `Verde`/`VERDE`; status vazio (51) | `status_semanal` | `lower(trim())`; flag `status_vazio`, não descarta |
+
+Gold: 3 materialized views do pipeline (`fato_projeto_semana`, `projeto_situacao_atual`, `utilizacao_pessoa_semana`) e
+`status_estruturado`, tabela comum da sql_task `src/ia/`: acumula (`CREATE TABLE IF NOT EXISTS` + `MERGE` só dos status novos),
+a IA só roda nos últimos 90 dias com bloqueio e nunca é refeita.
 
 Números de teste (seed 42): silver.tarefas 4.917 (Excel 1.643, ClickUp 2.119, MS Project 1.155) · custo real R$ 193,35 mi ·
 5 entregas em atraso, todas da CodeForge · 41 projetos em andamento, 7 críticos e 10 em atenção.

@@ -1,5 +1,11 @@
-# O job vertice_farol: ingestão da bronze, conferência, o pipeline medalhão (silver e gold) e os testes.
-# Nasceu do job "Ingestao" da etapa 2 (`bundle generate job`); os notebooks são os de ingestao/.
+# O job vertice_farol: a noite inteira do Farol, da ingestão à IA, em 6 tarefas.
+#   ingestao_feriados    (notebook) feriados nacionais da API pública na bronze
+#   ingestao_data_lake   (notebook) arquivos das 4 ferramentas e do RH baixados do data lake para o volume, e a bronze
+#   conferencia_bronze   (sql)      confere as 9 tabelas da bronze contra a contagem esperada; falha se divergir
+#   medalhao             (pipeline) vertice_medalhao: silver (7 tabelas) e gold
+#   testes_de_qualidade  (sql)      10 testes da silver e da gold; falha dizendo qual quebrou
+#   status_com_ia        (sql)      gold.status_estruturado: IA lê o texto do status, MERGE só dos status novos
+# As duas ingestões rodam em paralelo, e os testes e a IA também, depois do medalhão.
 # As chaves do data lake NÃO ficam aqui: são variáveis do bundle (ver databricks.yml), com o valor em
 # .databricks/bundle/dev/variable-overrides.json, que o .gitignore deixa fora do Git.
 resources:
@@ -7,10 +13,9 @@ resources:
     vertice_farol:
       name: vertice_farol
       schedule:
-        # toda segunda às 6h; pausado até o job completo estar pronto
+        # toda segunda às 6h; no target dev o preset trigger_pause_status deixa pausado
         quartz_cron_expression: "0 0 6 ? * MON"
         timezone_id: America/Sao_Paulo
-        pause_status: PAUSED
       tasks:
         - task_key: ingestao_feriados
           notebook_task:
@@ -56,12 +61,22 @@ resources:
             file:
               path: ../src/testes/testes.sql
 
+        # o texto livre do status vira coluna (IA nos últimos 90 dias com bloqueio); em paralelo com os testes
+        - task_key: status_com_ia
+          depends_on:
+            - task_key: medalhao
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/ia/status_estruturado.sql
+
       email_notifications:
         no_alert_for_skipped_runs: false
       environments:
         - environment_key: Default
           spec:
             environment_version: "6"
+      # uma execução por vez: duas ao mesmo tempo apagariam a bronze uma da outra
       max_concurrent_runs: 1
       performance_target: PERFORMANCE_OPTIMIZED
       queue:
