@@ -9,7 +9,6 @@ node_modules/
 
 # Material de referência (não publicar)
 arquivos-luciano/
-llm/
 
 # Claude Code: skills instaladas pelo databricks aitools e configuracao local
 .claude/skills/

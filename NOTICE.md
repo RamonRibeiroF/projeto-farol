@@ -10,7 +10,9 @@ Este repositório documenta o meu estudo da **Imersão Databricks + Claude Code*
 
 - o case da **Vértice Tecnologia** e as quatro perguntas da diretoria;
 - o dataset sintético e o seu gerador (`data/`);
-- o código-base de ingestão, análises, dashboard e Genie, que segue o material da imersão.
+- o código-base de ingestão, análises, dashboard e Genie, que segue o material da imersão;
+- os prompts do Claude Code em `llm/`, adaptados dos prompts da imersão (profile próprio, pastas do repositório e os
+  ajustes que o dado pediu).
 
 ## O que é meu
 
