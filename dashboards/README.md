@@ -1,6 +1,23 @@
-# Dashboards e Genie sobre a bronze
+# Dashboards e Genie
 
-## Dashboard de portfólio (AI/BI)
+## Dashboard da gold
+
+`gold/gerar_dashboard.py` escreve `gold/portfolio.lvdash.json`: o dashboard AI/BI "Projeto Farol · Portfólio", sobre a
+camada **gold**, com três páginas. **Portfólio** (KPIs da carteira em andamento, estouro previsto por projeto, SPI × CPI,
+tendência semanal e o farol do gerente ao lado do farol pelo número), **Pessoas** (custo da hora parada, utilização e
+causas de bloqueio lidas do status) e **Fornecedores** (prazo real ÷ prometido e entregas vencidas, sobre
+`silver.entregas_fornecedor`). "Hoje" é 16/10/2026.
+
+```bash
+python3 dashboards/gold/gerar_dashboard.py        # regera o JSON
+databricks bundle deploy --profile SEU-PERFIL     # publica (resources/dashboard.dashboard.yml)
+```
+
+O deploy é pelo bundle: catálogo e schema (`gold`) vêm do recurso, por isso as queries usam o nome puro das tabelas.
+Editar o dashboard direto no workspace trava o próximo deploy ("modified remotely"): a mudança vai para o script,
+que regera o JSON.
+
+## Dashboard da bronze (AI/BI)
 
 O dashboard é código: `bronze/gerar_dashboard.py` escreve `bronze/portfolio-bronze.lvdash.json` e, com `--deploy`,
 publica no workspace.

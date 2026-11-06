@@ -1,0 +1,11 @@
+# Dashboard de portfólio sobre a gold (três páginas: Portfólio, Pessoas, Fornecedores).
+# O JSON é gerado por dashboards/gold/gerar_dashboard.py; não edite o dashboard no workspace,
+# senão o próximo deploy recusa ("modified remotely"): a mudança vai para o script.
+resources:
+  dashboards:
+    dashboard_portfolio:
+      display_name: "Projeto Farol · Portfólio"
+      file_path: ../dashboards/gold/portfolio.lvdash.json
+      dataset_catalog: ${var.catalog}
+      dataset_schema: gold
+      warehouse_id: ${var.warehouse_id}

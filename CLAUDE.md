@@ -9,7 +9,7 @@ no Databricks Free Edition. Contexto completo em `README.md` e `docs/PRD.md`.
 |---|---|
 | `ingestao/` | catálogo, carga dos dados no volume (notebook) e tabelas bronze, com verificação |
 | `analises/` | análises SQL exploratórias sobre a bronze |
-| `dashboards/` | dashboard AI/BI como código (`gerar_dashboard.py` gera o JSON) |
+| `dashboards/` | dashboards AI/BI como código: `bronze/` (deploy pelo próprio script) e `gold/` (`gerar_dashboard.py` gera o JSON; deploy pelo bundle) |
 | `genie/` | espaço Genie em JSON |
 | `data/` | gerador do dataset sintético e validador dos padrões |
 | `tools/` | `run_sql.py` (roda `.sql` statement por statement) e `genie.py` (publica, pergunta, benchmark) |
