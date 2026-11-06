@@ -1,6 +1,6 @@
 # Prompts do Claude Code
 
-Os prompts que construíram a etapa 3 (bundle, silver, gold). Cada um é colado **inteiro** no Claude Code, aberto na
+Os prompts que construíram a etapa 3 (bundle, silver, gold, IA no texto do status, job completo). Cada um é colado **inteiro** no Claude Code, aberto na
 raiz do repositório, nesta ordem. Troque `<perfil>` pelo nome do seu profile do Databricks CLI
 (`databricks auth profiles` lista os seus).
 
@@ -8,6 +8,7 @@ raiz do repositório, nesta ordem. Troque `<perfil>` pelo nome do seu profile do
 |---|---|---|---|
 | 1 | [`prompt_01.md`](prompt_01.md) | conferência da bronze e pipeline `vertice_medalhao` com a silver (7 tabelas) | 9 linhas `ok` · 4.917 tarefas · custo R$ 193,35 mi |
 | 2 | [`prompt_02.md`](prompt_02.md) | gold (3 tabelas) e 10 testes que derrubam o job | 10 testes `ok` · 7 críticos · 10 em atenção · 4 melancias · estouro de R$ 6,47 mi |
+| 3 | [`prompt_03.md`](prompt_03.md) | `gold.status_estruturado` (IA lê o texto do status, `MERGE` incremental) e o job completo de 6 tarefas | `ia` 163 · `regra` 2.954 · `palavra_chave` 794 · PRJ-011: `falta_sre`, 12 semanas, 57 dias · 2ª execução insere 0 linhas |
 
 Antes do prompt 1, faça o passo a passo de [`docs/etapa-3-como-reproduzir.md`](../docs/etapa-3-como-reproduzir.md).
 
@@ -20,3 +21,14 @@ Antes do prompt 1, faça o passo a passo de [`docs/etapa-3-como-reproduzir.md`](
 
 Os prompts foram adaptados dos prompts da imersão (veja o [`NOTICE.md`](../NOTICE.md)): profile próprio, pastas do
 repositório e os ajustes que o dado pediu (por exemplo, o teste 9).
+
+**Prompt 3 · se der errado**
+
+| Sintoma | Causa | Correção |
+|---|---|---|
+| tarefa da IA passa de 10 min | a IA está rodando em todos os ~3,9 mil status | só os últimos 90 dias **com bloqueio** vão para a IA; o resto é regra ou palavra-chave (`metodo`) |
+| `dias_impacto` vem como texto | `ai_extract` sem schema tipado | JSON schema com `"type": "number"` e `map('version','2.0')` |
+| `causa_bloqueio` nulo nas linhas da IA | leu o VARIANT sem `:response[0]` | `ai_classify(...):response[0]::STRING` |
+| `TABLE_OR_VIEW_ALREADY_EXISTS` | `CREATE TABLE` sem `IF NOT EXISTS` | a tabela acumula: `CREATE TABLE IF NOT EXISTS` |
+| rodou de novo e inseriu tudo outra vez | faltou o `LEFT ANTI JOIN` | o `MERGE` só recebe o que ainda não está na tabela |
+| uma tarefa falhou no meio | qualquer erro numa camada | **Repair run** no workspace: refaz só a que falhou e as seguintes |
